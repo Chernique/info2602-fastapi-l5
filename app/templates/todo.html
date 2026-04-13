@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}Todo App{% endblock %}
-{% block page %} {{ current_user.username }}'s' Todo{% endblock %}
+{% block page %} {{ current_user.username }}'s Todo List{% endblock %}
 
 {% block link%}
     <ul id="nav-mobile" class="right">
@@ -15,16 +15,147 @@
 
   #result{
     margin-top:10px;
-    height: 40vh;
+    height: 50vh;
     overflow-y: scroll;
   }
 
-  .card{
-    height: 265px;
-    padding-top: 50px;
+  .category-badge{
+    display: inline-block;
+    background-color: #e3f2fd;
+    padding: 3px 8px;
+    margin: 2px;
+    border-radius: 12px;
+    font-size: 0.8em;
   }
 
+  .category-badge a{
+    color: #1565c0;
+    text-decoration: none;
+    margin-left: 5px;
+  }
+
+  .add-category-form{
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+  }
 {% endblock %}
 
 {% block content %} 
+<main class="container" style="padding-top: 75px">
+    <div class="row">
+        <div class="col s12 m4">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Add New Todo</span>
+                    <form method="POST" action="/todos">
+                        <div class="input-field">
+                            <input type="text" name="text" id="todo_text" required>
+                            <label for="todo_text">Todo Text</label>
+                        </div>
+                        <button class="btn blue waves-effect waves-light" type="submit">
+                            Add Todo
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Categories</span>
+                    <form method="POST" action="/category">
+                        <div class="input-field">
+                            <input type="text" name="name" id="category_name" required>
+                            <label for="category_name">New Category</label>
+                        </div>
+                        <button class="btn blue waves-effect waves-light" type="submit">
+                            Create Category
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col s12 m8">
+            <ul class="collection" id="result">
+                {% for todo in current_user.todos %}
+                    <li class="collection-item">
+                        <form class="row" method="POST" action="/toggle/{{todo.id}}">
+                            <div class="col s12">
+                                <span class="card-title">
+                                    {{todo.text}}
+                                    <label class="right">
+                                        <input type="checkbox" name="done" onchange="this.form.submit()" {% if todo.done %} checked {% endif %} />
+                                        <span>Done</span>
+                                    </label>
+                                </span>
+                            </div>
+                        </form>
+                        
+                        <!-- Categories for this todo -->
+                        <div class="row" style="margin-top: 5px">
+                            <div class="col s12">
+                                <strong>Categories:</strong>
+                                {% for cat in todo.categories %}
+                                    <span class="category-badge">
+                                        {{cat.text}}
+                                        <a href="/todo/{{todo.id}}/category/{{cat.id}}/remove" onclick="return confirm('Remove this category?')">&times;</a>
+                                    </span>
+                                {% else %}
+                                    <span class="grey-text">No categories</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Add category to todo -->
+                        <div class="row add-category-form">
+                            <div class="col s8">
+                                <select name="category_id" id="category_{{todo.id}}" class="browser-default">
+                                    <option value="">Select a category...</option>
+                                    {% for cat in current_user.categories %}
+                                        {% if cat not in todo.categories %}
+                                            <option value="{{cat.id}}">{{cat.text}}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col s4">
+                                <button class="btn-small blue" onclick="addCategory({{todo.id}}, document.getElementById('category_{{todo.id}}').value)">
+                                    Add Category
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row" style="margin-top: 10px">
+                            <div class="col s12">
+                                <a href="/editTodo/{{todo.id}}" class="btn-small blue">EDIT</a>
+                                <a href="/deleteTodo/{{todo.id}}" class="btn-small red" onclick="return confirm('Delete this todo?')">DELETE</a>
+                            </div>
+                        </div>
+                    </li>
+                {% else %}
+                    <li class="collection-item">
+                        <p class="center-align grey-text">No todos yet! Create one above.</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</main>
+
+<script>
+function addCategory(todoId, catId) {
+    if (catId) {
+        fetch(`/todo/${todoId}/category/${catId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        }).then(() => {
+            location.reload();
+        });
+    }
+}
+</script>
 {% endblock %}
