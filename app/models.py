@@ -25,6 +25,7 @@ class UserBase(SQLModel,):
 class User(UserBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     todos: list['Todo'] = Relationship(back_populates="user")
+    categories: list['Category'] = Relationship(back_populates="user")  # Add this line
 
 class AdminCreate(UserBase):
     role:str = "admin"
@@ -43,7 +44,8 @@ class Category(SQLModel, table=True):
     text:str
 
     todos:list['Todo'] = Relationship(back_populates="categories", link_model=TodoCategory)
-
+    user: User = Relationship(back_populates="categories")  # Add this line
+    
 class TodoCreate(SQLModel):
     text:str
 
@@ -70,3 +72,7 @@ class Todo(SQLModel, table=True):
     
     def get_cat_list(self):
         return ', '.join([category.text for category in self.categories])
+
+class CategoryResponse(SQLModel):
+    id: int
+    text: str
